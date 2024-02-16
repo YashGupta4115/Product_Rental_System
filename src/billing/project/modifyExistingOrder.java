@@ -379,9 +379,10 @@ public class modifyExistingOrder implements ActionListener{
             Class.forName("com.mysql.cj.jdbc.Driver");
             Connection con = DriverManager.getConnection(url,uname,pass);
             String item_booked = "insert into item_booked values(?,?,?,?)";
-            String price_info = "update price_info set total_items_Amount=(select Amount*(select item_Qnt from item_booked where item_id=?) from items where item_id=?),grand_total= total_items_Amount+labour where client_id=?";
+            String price_info = "update price_info set total_items_Amount=total_items_Amount + (select Amount*(select item_Qnt from item_booked where item_id=?) from items where item_id=?),grand_total=total_items_Amount+labour where client_id=?";
             String reduceAvail = "update items set Available = Available-? where item_name = ?";
             String client_details = "update client_details set Amount_payable=(select grand_total from price_info where client_id = ?),Amount_due = Amount_payable - Amount_paid where client_id=?";
+            String allOrders = "insert into allorders values (?,?,?,?)";
             
             PreparedStatement pstm1 = con.prepareStatement(item_booked);    
           
@@ -408,10 +409,17 @@ public class modifyExistingOrder implements ActionListener{
             pstm4.setInt(1,client_id);
             pstm4.setInt(2,client_id);
             
+            PreparedStatement pstm5 = con.prepareStatement(allOrders);
+            pstm5.setInt(1,client_id);
+            pstm5.setInt(2,getItemId);
+            pstm5.setString(3,result[0]);
+            pstm5.setInt(4,Integer.parseInt(quantity.getText()));
+            
             pstm1.executeUpdate();
             pstm2.executeUpdate();
             pstm3.executeUpdate();
             pstm4.executeUpdate();
+            pstm5.executeUpdate();
             displayItems();
         }catch(ClassNotFoundException | SQLException e){
             JOptionPane.showMessageDialog(null, e, "Not Found", JOptionPane.INFORMATION_MESSAGE);
