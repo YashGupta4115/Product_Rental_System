@@ -35,13 +35,14 @@ public class updateItems {
                 pstm2.setInt(1, rs3.getInt("client_id"));
                 pstmU.setInt(1,rs3.getInt("client_id"));
                 ResultSet rs2 = pstm2.executeQuery();
-                pstmU.executeUpdate();
+                
                 //System.out.println("sq3 - ok");
                 
                 while(rs2.next()){
                     
                     PreparedStatement pstm1 = con.prepareStatement(sq1);
                     pstm1.setInt(1,rs2.getInt("item_id"));
+                    
                     
                     ResultSet rs1 = pstm1.executeQuery();
                     
@@ -55,6 +56,7 @@ public class updateItems {
                             //System.out.println("sq1 - ok");
                         }
                 }
+                pstmU.executeUpdate();
             }
             
             

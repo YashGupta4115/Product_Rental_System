@@ -253,6 +253,7 @@ public class modifyExistingOrder implements ActionListener{
                     JOptionPane.showMessageDialog(null, e1, "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }catch(HeadlessException | ClassNotFoundException | SQLException e){
+                System.out.println(e+"At displayItem");
                 JOptionPane.showMessageDialog(null, "Empty columns", "Error", JOptionPane.WARNING_MESSAGE);
             }
             
@@ -310,10 +311,12 @@ public class modifyExistingOrder implements ActionListener{
                         PreparedStatement pstm2;
                         PreparedStatement pstm3;
                         PreparedStatement pstm4;
+                        PreparedStatement pstm5;
 
                         String q1 = "update items set Available=Available+? where Item_id=?";
                         PreparedStatement pstm1 = con.prepareStatement(q1);
                         pstm1.setInt(1, Integer.parseInt(rowData[2].toString()));
+                        System.out.println(rowData[2].toString());
                         pstm1.setInt(2, Integer.parseInt(rowData[0].toString()));
 
 
@@ -333,11 +336,16 @@ public class modifyExistingOrder implements ActionListener{
                         pstm4 = con.prepareStatement(q4);
                         pstm4.setDouble(1, Double.parseDouble(rowData[3].toString()));
                         
+                        String q5 = "delete from allorders where item_id=?";
+                        pstm5 = con.prepareStatement(q5);
+                        pstm5.setInt(1, Integer.parseInt(rowData[0].toString()));
+                        
                         pstm4.setInt(2, client_id);
                         pstm1.executeUpdate();
                         pstm2.executeUpdate();
                         pstm3.executeUpdate();
                         pstm4.executeUpdate();
+                        pstm5.executeUpdate();
 
                         con.close();
                     }catch(ClassNotFoundException | NumberFormatException | SQLException e){
@@ -370,7 +378,8 @@ public class modifyExistingOrder implements ActionListener{
             displayItems();
             
         }catch(ClassNotFoundException | NumberFormatException | SQLException e){
-            JOptionPane.showMessageDialog(null, e, "Not Found", JOptionPane.INFORMATION_MESSAGE);
+            System.out.println(e+"At updateModify");
+            JOptionPane.showMessageDialog(null, e, "Not Found( update item)", JOptionPane.INFORMATION_MESSAGE);
         }
     }
     
@@ -422,7 +431,8 @@ public class modifyExistingOrder implements ActionListener{
             pstm5.executeUpdate();
             displayItems();
         }catch(ClassNotFoundException | SQLException e){
-            JOptionPane.showMessageDialog(null, e, "Not Found", JOptionPane.INFORMATION_MESSAGE);
+            System.out.println(e+"At addNewItem");
+            JOptionPane.showMessageDialog(null, e, "Not Found((add new item))", JOptionPane.INFORMATION_MESSAGE);
         }
     }
     
@@ -441,9 +451,19 @@ public class modifyExistingOrder implements ActionListener{
                 Class.forName("com.mysql.cj.jdbc.Driver");
                 Connection con;
                 con = DriverManager.getConnection(url,uname,pass);
+                int newQuant = Integer.parseInt(newQauntity);                
+           
+                int diff = (newQuant - Integer.parseInt(rowData[2].toString()));
+                
+                String updateAllOrders = "update allorders set item_Qnt=? where item_id=?";
+                PreparedStatement pstm0 = con.prepareStatement(updateAllOrders);
+                pstm0.setInt(1,newQuant);
+                pstm0.setInt(2,Integer.parseInt(rowData[0].toString()));
+                        
+                
                 String updateItems = "update items set Available = Available-? where item_id=?";
                 PreparedStatement pstm1 = con.prepareStatement(updateItems);
-                pstm1.setInt(1,Integer.parseInt(newQauntity));
+                pstm1.setInt(1,diff);
                 pstm1.setInt(2,Integer.parseInt(rowData[0].toString()));
                 
                 String updateItemBooked = "update item_booked set item_Qnt=? where item_id=? and client_id=?";
@@ -452,17 +472,46 @@ public class modifyExistingOrder implements ActionListener{
                 pstm2.setInt(2, Integer.parseInt(rowData[0].toString()));
                 pstm2.setInt(3,client_id);
                 
-                String updatePriceInfo = "update price_info set total_items_Amount=(select Amount*(select item_Qnt from item_booked where item_id=?) from items where item_id=?),grand_total= total_items_Amount+labour where client_id=?";
+                int total = 0;
+                String getItemQnts = "SELECT item_id, item_Qnt FROM item_booked WHERE client_id=?";
+                PreparedStatement getQnts = con.prepareStatement(getItemQnts);
+                getQnts.setInt(1, client_id); // get Item Id
+                ResultSet getQntsRes = getQnts.executeQuery();
+
+                while (getQntsRes.next()) {
+                    String getItemAmount = "SELECT Amount * ? AS Total FROM items WHERE item_id=?";
+                    PreparedStatement getAmount = con.prepareStatement(getItemAmount);
+                    getAmount.setInt(1, getQntsRes.getInt("item_Qnt"));
+                    getAmount.setInt(2, getQntsRes.getInt("item_id"));
+
+                    ResultSet getAmountRes = getAmount.executeQuery();
+                    if (getAmountRes.next()) {
+                        total += getAmountRes.getInt("Total");
+                    }
+
+                    // Close the ResultSet and PreparedStatement for the inner query
+                    getAmountRes.close();
+                    getAmount.close();
+                }
+
+                // Close the ResultSet and PreparedStatement for the outer query
+                getQntsRes.close();
+                getQnts.close();
+
+                
+                String updatePriceInfo = "update price_info set total_items_Amount=?,grand_total= total_items_Amount+labour where client_id=?";
                 PreparedStatement pstm3 = con.prepareStatement(updatePriceInfo);
-                pstm3.setInt(1,Integer.parseInt(rowData[0].toString()));
-                pstm3.setInt(2,Integer.parseInt(rowData[0].toString()));
-                pstm3.setInt(3,client_id);
+                
+                pstm3.setInt(1,total);
+                pstm3.setInt(2,client_id);
                 
                 String UpdateClientDetails = "update client_details set Amount_payable=(select grand_total from price_info where client_id = ?),Amount_due = Amount_payable - Amount_paid where client_id=?";
                 PreparedStatement pstm4 = con.prepareStatement(UpdateClientDetails);
                 pstm4.setInt(1,client_id);
                 pstm4.setInt(2,client_id);
                 
+                
+                pstm0.executeUpdate();
                 pstm1.executeUpdate();
                 pstm2.executeUpdate();
                 pstm3.executeUpdate();
@@ -471,7 +520,8 @@ public class modifyExistingOrder implements ActionListener{
                 
                 
             }catch(ClassNotFoundException | NumberFormatException | SQLException e){
-                JOptionPane.showMessageDialog(null, e, "Not Found", JOptionPane.INFORMATION_MESSAGE);
+                System.out.println(e+"At modifyItem");
+                JOptionPane.showMessageDialog(null, e, "Not Found(modify item)", JOptionPane.INFORMATION_MESSAGE);
             }
         }
     }
@@ -481,19 +531,26 @@ public class modifyExistingOrder implements ActionListener{
             Class.forName("com.mysql.cj.jdbc.Driver");
             Connection con;
             con = DriverManager.getConnection(url, uname, pass);
-            try (Statement st = con.createStatement()) {
-                String q = "select item_id,item_name from items";
-                
-                ResultSet rs = st.executeQuery(q);
-                
-                while (rs.next()) {
-                    displayItemName.addItem(rs.getString("item_name") + "(" + rs.getString("item_id") + ")");
-                    
-                }
+            try (Statement st = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+                String q = "SELECT item_id, item_name FROM items WHERE item_id NOT IN (SELECT item_id FROM item_booked WHERE client_id = ?)";
+                PreparedStatement pstm1 = con.prepareStatement(q, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                pstm1.setInt(1, client_id);
+                ResultSet rs = pstm1.executeQuery();
+                    // Process the result set
+                    while (rs.next()) {
+                        String itemName = rs.getString("item_name");
+                        int itemId = rs.getInt("item_id");
+                        // Assuming displayItemName is a JComboBox or similar
+                        displayItemName.addItem(itemName + " (" + itemId + ")");
+                    }
+                // Close the PreparedStatement and Statement
+                pstm1.close();
+                st.close();
             }
-            con.close();
+            
         } catch (ClassNotFoundException | SQLException e) {
-            JOptionPane.showMessageDialog(null, e, "Error", JOptionPane.ERROR_MESSAGE);
+            System.out.println(e+"At modifyItem");
+                JOptionPane.showMessageDialog(null, e, "Not Found(createComboBox)", JOptionPane.INFORMATION_MESSAGE);
         }
         
     }

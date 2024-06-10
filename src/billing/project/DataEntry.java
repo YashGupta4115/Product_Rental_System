@@ -36,7 +36,7 @@ public class DataEntry implements ActionListener {
     JTable dataTable;
     
     
-    DataEntry(){
+    public DataEntry(){
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setLayout(new FlowLayout());
         frame.setSize(1200,600);
@@ -87,7 +87,7 @@ public class DataEntry implements ActionListener {
         String uname = Main.uname;
         String pass = Main.pass;
     
-    void addItem(String item_name,float amt, int avail){
+    public void addItem(String item_name,float amt, int avail){
        
         String q="insert into items values(?,?,?,?,?)";
         String retriveId = "SELECT * FROM items ORDER BY item_id DESC LIMIT 1;";

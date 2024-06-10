@@ -2,7 +2,6 @@
 package billing.project;
 
 
-
 public class Main{
     public static final String url,uname,pass;
     
