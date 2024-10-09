@@ -8,7 +8,7 @@ import javax.swing.*;
 
 
 
-
+//extends - inherits class(is-a), implements : inherits interface(can-do)
 public class OptionMain extends JFrame implements ActionListener {
     
     JPanel panel;
@@ -23,9 +23,6 @@ public class OptionMain extends JFrame implements ActionListener {
     JButton deleteOrders;
     
     public OptionMain(){
-        
-        
-        
         panel = new JPanel();
         
         addItemButton = new JButton("ADD ITEMS");
@@ -41,9 +38,7 @@ public class OptionMain extends JFrame implements ActionListener {
         newOrder  = new JButton("NEW ORDER");
         newOrder.setFocusable(false);
         newOrder.setBackground(Color.LIGHT_GRAY);
-        newOrder.setPreferredSize(new Dimension(150, 40));
-        
-        
+        newOrder.setPreferredSize(new Dimension(150, 40));      
         
         modifyOrder = new JButton("MODIFY ORDERS");
         modifyOrder.setFocusable(false);
@@ -64,14 +59,13 @@ public class OptionMain extends JFrame implements ActionListener {
         addItemButton.addActionListener(this);
         showItems.addActionListener(this);
         newOrder.addActionListener(this);
-        
         modifyOrder.addActionListener(this);
         showOrders.addActionListener(this);
         
         
         
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setLayout(new FlowLayout());
+        this.setLayout(new FlowLayout()); // defaulr layout-directional flow
         this.setSize(500,400);
         
         

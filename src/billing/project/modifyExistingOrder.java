@@ -2,6 +2,7 @@
 package billing.project;
 
 import java.awt.*;
+import java.util.*;
 import java.awt.event.*;
 import java.sql.*;
 import java.text.*;
@@ -47,16 +48,9 @@ public class modifyExistingOrder implements ActionListener{
     String uname = Main.uname;
     String pass = Main.pass;
     
+    HashMap<String, Integer> displayItemMap;
+    
     public modifyExistingOrder() {
-        
-//        WindowListener listener = new WindowAdapter() {
-//            @Override
-//            public void windowClosing(WindowEvent evt) {
-//                JOptionPane.showMessageDialog(null, "calling main function", "Not Found", JOptionPane.INFORMATION_MESSAGE);
-//                evt.getSource();
-//                new newOrder();
-//            }
-//        };
         
         addNewItem = new JButton("addNewItem");
         addNewItem.addActionListener(this);
@@ -156,11 +150,13 @@ public class modifyExistingOrder implements ActionListener{
         frame.add(MainPanel1);
         frame.add(MainPanel2);
         //frame.addWindowListener(listener);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         frame.setSize(1200,730);
         frame.setLayout(new GridLayout(0,2));
         frame.setVisible(true);
         clientNameDisplay();
+        
+        displayItemMap = new HashMap<>();
         
     }
     int client_id;
@@ -384,35 +380,40 @@ public class modifyExistingOrder implements ActionListener{
     }
     
     void AddNewItem(){
+        String[] values =  displayItemName.getSelectedItem().toString().split("\\(");
+        String itemName = values[0].trim();
+        int itemId = Integer.parseInt(values[1].substring(0,values[1].length()-2));
+        int itemQuantity = 0;
+        if(displayItemMap.containsKey(itemName))
+            itemQuantity = displayItemMap.get(itemName);
+        
+        if(itemQuantity < Integer.parseInt(quantity.getText()) ){
+            JOptionPane.showMessageDialog(null, "Not enough quantity !", "Error", JOptionPane.INFORMATION_MESSAGE);
+        }else
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");
             Connection con = DriverManager.getConnection(url,uname,pass);
             String item_booked = "insert into item_booked values(?,?,?,?)";
             String price_info = "update price_info set total_items_Amount=total_items_Amount + (select Amount*(select item_Qnt from item_booked where item_id=?) from items where item_id=?),grand_total=total_items_Amount+labour where client_id=?";
-            String reduceAvail = "update items set Available = Available-? where item_name = ?";
+            String reduceAvail = "update items set Available = Available-? where Item_id = ?";
             String client_details = "update client_details set Amount_payable=(select grand_total from price_info where client_id = ?),Amount_due = Amount_payable - Amount_paid where client_id=?";
             String allOrders = "insert into allorders values (?,?,?,?)";
             
-            PreparedStatement pstm1 = con.prepareStatement(item_booked);    
-          
-            String[] result = displayItemName.getSelectedItem().toString().split("\\(");
-            String[] result2 = result[1].split("\\)");
-            int getItemId = Integer.parseInt(result2[0]);
+            PreparedStatement pstm1 = con.prepareStatement(item_booked);            
             
             pstm1.setInt(1,client_id);
-            pstm1.setInt(2, getItemId);
-            pstm1.setString(3,result[0]);
-            pstm1.setInt(4,Integer.parseInt(quantity.getText()));
-            
+            pstm1.setInt(2, itemId);
+            pstm1.setString(3,itemName);
+            pstm1.setInt(4,Integer.parseInt(quantity.getText()));            
             
             PreparedStatement pstm2 = con.prepareStatement(price_info);
-            pstm2.setInt(1,getItemId);
-            pstm2.setInt(2,getItemId);
+            pstm2.setInt(1,itemId);
+            pstm2.setInt(2,itemId);
             pstm2.setInt(3,client_id);
             
             PreparedStatement pstm3 = con.prepareStatement(reduceAvail);
             pstm3.setInt(1, Integer.parseInt(quantity.getText()));
-            pstm3.setString(2,result[0]);
+            pstm3.setString(2,Integer.toString(itemId));
             
             PreparedStatement pstm4 = con.prepareStatement(client_details);
             pstm4.setInt(1,client_id);
@@ -420,20 +421,32 @@ public class modifyExistingOrder implements ActionListener{
             
             PreparedStatement pstm5 = con.prepareStatement(allOrders);
             pstm5.setInt(1,client_id);
-            pstm5.setInt(2,getItemId);
-            pstm5.setString(3,result[0]);
+            pstm5.setInt(2,itemId);
+            pstm5.setString(3,itemName);
             pstm5.setInt(4,Integer.parseInt(quantity.getText()));
             
             pstm1.executeUpdate();
             pstm2.executeUpdate();
             pstm3.executeUpdate();
+            displayItemMap.put(itemName, displayItemMap.getOrDefault(itemName,0) - Integer.parseInt(quantity.getText()));
+            updateDisplayItems();
             pstm4.executeUpdate();
             pstm5.executeUpdate();
             displayItems();
+            
         }catch(ClassNotFoundException | SQLException e){
             System.out.println(e+"At addNewItem");
             JOptionPane.showMessageDialog(null, e, "Not Found((add new item))", JOptionPane.INFORMATION_MESSAGE);
         }
+    }
+    
+    void updateDisplayItems(){
+        displayItemName.removeAllItems();
+        displayItemMap.entrySet().forEach(entry -> {
+            String itemName = entry.getKey();
+            int q1 = entry.getValue();
+            displayItemName.addItem(itemName + " (" + q1 + ")");
+        });
     }
     
     void modifyItem(){
@@ -445,19 +458,26 @@ public class modifyExistingOrder implements ActionListener{
             for(int i=0;i<tableModel.getColumnCount();i++){
                 rowData[i] = tableModel.getValueAt(selectedRowIndex,i);
             }
-            String newQauntity = JOptionPane.showInputDialog("Enter new qauntity for "+rowData[2]);
             
             try{
                 Class.forName("com.mysql.cj.jdbc.Driver");
                 Connection con;
                 con = DriverManager.getConnection(url,uname,pass);
-                int newQuant = Integer.parseInt(newQauntity);                
-           
-                int diff = (newQuant - Integer.parseInt(rowData[2].toString()));
+                String getAvailability = "select Available from items where item_id = ?";
+                PreparedStatement pstm = con.prepareStatement(getAvailability);
+                pstm.setInt(1, Integer.parseInt(rowData[0].toString()));
+                ResultSet rs = pstm.executeQuery();
+                int newQauntity = 0;
+                if(rs.next()){
+                    int eQuant = rs.getInt("Available");
+                    newQauntity = Integer.parseInt(JOptionPane.showInputDialog("Enter new qauntity for "+rowData[1]+" Available : "+eQuant));
+                }
+
+                int diff = (newQauntity - Integer.parseInt(rowData[2].toString()));
                 
                 String updateAllOrders = "update allorders set item_Qnt=? where item_id=?";
                 PreparedStatement pstm0 = con.prepareStatement(updateAllOrders);
-                pstm0.setInt(1,newQuant);
+                pstm0.setInt(1,newQauntity);
                 pstm0.setInt(2,Integer.parseInt(rowData[0].toString()));
                         
                 
@@ -468,7 +488,7 @@ public class modifyExistingOrder implements ActionListener{
                 
                 String updateItemBooked = "update item_booked set item_Qnt=? where item_id=? and client_id=?";
                 PreparedStatement pstm2 = con.prepareStatement(updateItemBooked);
-                pstm2.setInt(1,Integer.parseInt(newQauntity));
+                pstm2.setInt(1,newQauntity);
                 pstm2.setInt(2, Integer.parseInt(rowData[0].toString()));
                 pstm2.setInt(3,client_id);
                 
@@ -526,32 +546,36 @@ public class modifyExistingOrder implements ActionListener{
         }
     }
     
-    public void createComboBox(){
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection con;
-            con = DriverManager.getConnection(url, uname, pass);
-            try (Statement st = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
-                String q = "SELECT item_id, item_name FROM items WHERE item_id NOT IN (SELECT item_id FROM item_booked WHERE client_id = ?)";
-                PreparedStatement pstm1 = con.prepareStatement(q, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-                pstm1.setInt(1, client_id);
-                ResultSet rs = pstm1.executeQuery();
-                    // Process the result set
-                    while (rs.next()) {
-                        String itemName = rs.getString("item_name");
-                        int itemId = rs.getInt("item_id");
-                        // Assuming displayItemName is a JComboBox or similar
-                        displayItemName.addItem(itemName + " (" + itemId + ")");
-                    }
-                // Close the PreparedStatement and Statement
-                pstm1.close();
-                st.close();
+    void createComboBox() {
+    try {
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        try (Connection con = DriverManager.getConnection(url, uname, pass)) {
+            String q = "SELECT item_id, item_name, Available FROM items WHERE item_id NOT IN (SELECT item_id FROM item_booked WHERE client_id = ?)";
+            PreparedStatement pstm1 = con.prepareStatement(q);
+            pstm1.setInt(1, client_id);
+            ResultSet rs = pstm1.executeQuery();
+
+            // Clear existing items in combo box and map
+            displayItemName.removeAllItems();
+            displayItemMap.clear();
+
+            // Process the result set and populate the map and combo box
+            while (rs.next()) {
+                String itemName = rs.getString("item_name").trim();  // Use trim to avoid whitespace issues
+                int itemId = rs.getInt("item_id");
+                int itemAvail = rs.getInt("Available");
+                
+                displayItemName.addItem(itemName + " (" + itemId + ") (" + itemAvail + ")");
+                displayItemMap.put(itemName, itemAvail);  // Store the item name and its available quantity in the map
             }
-            
-        } catch (ClassNotFoundException | SQLException e) {
-            System.out.println(e+"At modifyItem");
-                JOptionPane.showMessageDialog(null, e, "Not Found(createComboBox)", JOptionPane.INFORMATION_MESSAGE);
+
+            // Close resources
+            pstm1.close();
         }
-        
+    } catch (ClassNotFoundException | SQLException e) {
+        System.out.println(e + " At createComboBox");
+        JOptionPane.showMessageDialog(null, e, "Not Found (createComboBox)", JOptionPane.INFORMATION_MESSAGE);
     }
+}
+
 }

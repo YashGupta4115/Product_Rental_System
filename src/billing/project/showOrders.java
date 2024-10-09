@@ -122,7 +122,7 @@ public class showOrders extends JFrame implements ActionListener{
         
         this.add(panel6);
         this.add(panel5);
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         this.setLayout(null);
         this.setSize(2480 , 3508);
         this.setVisible(true);
@@ -227,11 +227,11 @@ public class showOrders extends JFrame implements ActionListener{
                     ResultSet rs3 = pstm3.executeQuery();
                     rs3.next();
                     panel4.add(new JLabel(String.format("Labour : %.2f      |     ",rs3.getFloat("labour") )));
-                    panel4.add(new JLabel(String.format("GrandTotal : %.2f      |     ",rS.getFloat("Amount_payable") )));
+                    panel4.add(new JLabel(String.format("GrandTotal : %.2f      |     ",rS.getFloat("Amount_payable")+rs3.getFloat("labour") )));
                     panel4.add(new JLabel(String.format("Paid : %.2f      |     ",rS.getFloat("Amount_paid") )));
                     panel4.add(new JLabel(String.format("Due : %.2f       ",rS.getFloat("Amount_due") )));
                     labour = rs3.getFloat("labour");
-                    total = rS.getFloat("Amount_payable");
+                    total = rS.getFloat("Amount_payable") + labour;
                     panel4.setVisible(true);
                     panel5.setVisible(true);
                     
@@ -277,13 +277,13 @@ public class showOrders extends JFrame implements ActionListener{
         headPanel = new JPanel(new GridBagLayout());
         headPanel.setBounds(0, 0, paperWidthPixels - 110, 100);
 
-        label1 = new JLabel("New Kumar Tent and Light Decorators");
+        label1 = new JLabel("XYZ");
         label1.setFont(new Font("Anton", Font.BOLD, 34));
 
-        label1_2 = new JLabel("Gouri Shankar Road, Jugalsai, Jamshedpur, 831006");
+        label1_2 = new JLabel("KIIT UNIVERSITY, PATIA, BHUBANESWAR");
         label1_2.setFont(new Font("Anton",Font.PLAIN, 24));
 
-        label1_3 = new JLabel("Contact: 9835341169, 9201461718");
+        label1_3 = new JLabel("Contact: 6201461718, XXXXXXXXXX");
         label1_3.setFont(new Font("Anton", Font.PLAIN, 24));
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -319,7 +319,7 @@ public class showOrders extends JFrame implements ActionListener{
         label5 = new JLabel(currentDate.toString());
         label5.setBounds(paperWidthPixels-280,130,100,50);
         
-        label6 = new JLabel("Event Date   : ");
+        label6 = new JLabel("Rent Date   : ");
         label6.setBounds(10,180,100,50);
         
         label7 = new JLabel(date);

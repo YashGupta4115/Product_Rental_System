@@ -1,4 +1,3 @@
-
 package billing.project;
 
 import java.awt.Color;
@@ -7,62 +6,48 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import javax.swing.*;
 
+public class Payment implements ActionListener {
 
-public class Payment implements ActionListener{
-  
-    JFrame frame = new JFrame();
-    
+    JDialog dialog;  // Use JDialog instead of JFrame for a modal behavior
+
     JPanel panel1;
     JPanel panel2;
-    
+
     JLabel totalAmt;
     JLabel totalAmtLabel;
-    
+
     JTextField clientName;
     JTextField clientPhone;
     JTextField clientEvent;
     JTextField clientPaid;
-    
+
     JButton button;
-    
+
     double totalAmount;
     int client_id;
-    
+
     String url = Main.url;
     String uname = Main.uname;
     String pass = Main.pass;
-    
-    
-    
-    public Payment(double ta,int id){
-        
-        
-        
-        WindowListener listener = new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent evt) {
-                evt.getSource();
-                functionIfFrameClosed();
-            }
-        };
-        
-        frame.setLocation(200, 200);
-        
+
+    // Variable to hold payment status
+    private boolean paymentCompleted = false;  // Default to false
+
+    public Payment(double ta, int id) {
+        dialog = new JDialog();  // Create a JDialog instance
+        dialog.setModal(true);   // Set dialog as modal to block other windows until closed
+
         totalAmount = ta;
         client_id = id;
-        
-        
+
         panel1 = new JPanel();
         panel1.setBounds(0, 0, 800, 40);
-       
-        
-        
+
         clientName = new JTextField();
         clientPhone = new JTextField();
         clientEvent = new JTextField();
@@ -78,146 +63,117 @@ public class Payment implements ActionListener{
         panel1.add(clientPhone);
         panel1.add(new JLabel("Event Date : "));
         panel1.add(clientEvent);
-        
+
         panel2 = new JPanel();
         panel2.setBounds(0, 60, 800, 40);
         clientPaid.setPreferredSize(new Dimension(150, 20));
-        
+
         totalAmtLabel = new JLabel();
         totalAmtLabel.setText("Rs. : " + String.format("%.2f/- only  |", totalAmount));
-        totalAmtLabel.setBounds(0,60,100,100);
+        totalAmtLabel.setBounds(0, 60, 100, 100);
         panel2.add(new JLabel("Total Amount"));
         panel2.add(totalAmtLabel);
         panel2.add(new JLabel("             "));
-        
+
         panel2.add(new JLabel("Amount Paid : "));
         panel2.add(clientPaid);
         panel2.add(new JLabel("          "));
-        
+
         button = new JButton("SUBMIT");
         button.setBackground(Color.LIGHT_GRAY);
         button.setPreferredSize(new Dimension(150, 40));
         panel2.add(button);
-        button.addActionListener(this);      
-        
-        frame.addWindowListener(listener);
-        frame.add(panel1);
-        frame.add(panel2);
-        
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.setLayout(null);
-        frame.setSize(800, 400);
-        frame.setVisible(true);
-        
+        button.addActionListener(this);
+
+        dialog.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent evt) {
+                functionIfFrameClosed();  // Handle closing event when user manually closes the window
+            }
+        });
+
+        dialog.add(panel1);
+        dialog.add(panel2);
+
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        dialog.setLayout(null);
+        dialog.setSize(800, 400);
+        dialog.setLocationRelativeTo(null);  // Center the dialog on screen
+        dialog.setVisible(true);
     }
+
     @Override
     public void actionPerformed(ActionEvent e) {
-        if(e.getSource() == button){
-            double amtDue = totalAmount - Double.parseDouble(clientPaid.getText());
-            dbms(amtDue);
-            frame.dispose();
+        if (e.getSource() == button) {
+            try {
+                double amtDue = totalAmount - Double.parseDouble(clientPaid.getText());
+                boolean paymentStatus = dbms(amtDue);
+                paymentCompleted = paymentStatus;  // Update the status variable
+
+                if (paymentStatus) {
+                    JOptionPane.showMessageDialog(null, "Payment completed successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(null, "Payment failed or was cancelled.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(null, "Invalid amount entered!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            dialog.dispose();  // Close the dialog after submission
         }
-        
+    }
+
+    // Method that returns the payment status to the calling class
+    public boolean isPaymentCompleted() {
+        return paymentCompleted;
     }
     
-    public void dbms(double amtDue){
-        try{
-            
-            
+
+    // Update the dbms method to return a boolean value indicating success or failure
+    public boolean dbms(double amtDue) {
+        try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection con;
-            con = DriverManager.getConnection(url,uname,pass);
-            String q2="update client_details set client_name=?,client_ph=?,Event_date=?,Amount_payable=?,Amount_paid=?,Amount_due=? where client_id=?;";
+            Connection con = DriverManager.getConnection(url, uname, pass);
+            String q2 = "insert into client_details values (?,?,?,?,?,?,?);";
             PreparedStatement pstm = con.prepareStatement(q2);
-            
-            try{
+
+            try {
                 SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
                 java.util.Date parsedDate = dateFormat.parse(clientEvent.getText());
                 java.sql.Date sqlDate = new java.sql.Date(parsedDate.getTime());
-                pstm.setDate(3,sqlDate);
-            }catch(SQLException | ParseException e2){
-            }
+                System.out.println(client_id);
+                pstm.setInt(1, client_id);
+                pstm.setString(2, clientName.getText());
+                pstm.setString(3, clientPhone.getText());
+                pstm.setDate(4, sqlDate);
+                pstm.setDouble(5, totalAmount);
+                pstm.setDouble(6, Double.parseDouble(clientPaid.getText()));
+                pstm.setDouble(7, amtDue);
 
-            pstm.setInt(7, client_id);
-            pstm.setString(1,clientName.getText());
-            pstm.setString(2,clientPhone.getText());
+                pstm.executeUpdate();
+                JOptionPane.showMessageDialog(null, "Payment SUCCESS\nAmount Due: " + amtDue, "Message", JOptionPane.INFORMATION_MESSAGE);
+                pstm.close();
+                con.close();
+                return true;  // Return true if the update is successful
+            } catch (SQLException | ParseException e2) {
+                return false;  // Return false if there's a parsing or SQL exception
+            }
             
-            pstm.setDouble(4,totalAmount);
-            pstm.setDouble(5,Double.parseDouble(clientPaid.getText()));
-            pstm.setDouble(6,amtDue);
-            
-            pstm.executeUpdate();
-            JOptionPane.showMessageDialog(null, "Payment SUCCESS\nAmount Due : "+amtDue , "Message", JOptionPane.INFORMATION_MESSAGE);
-            
-            
-        }catch(ClassNotFoundException | NumberFormatException | SQLException e1){
-            JOptionPane.showMessageDialog(null,"Payment Cancelled !","Error",JOptionPane.ERROR_MESSAGE);
+
+        } catch (ClassNotFoundException | NumberFormatException | SQLException e1) {
+            JOptionPane.showMessageDialog(null, "Payment Cancelled!", "Error", JOptionPane.ERROR_MESSAGE);
             functionIfFrameClosed();
+            return false;  // Return false if an exception occurs
         }
-    }
-    
-    public void functionIfFrameClosed(){
-        try{
-            
-            
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection con;
-            con = DriverManager.getConnection(url,uname,pass);
-            System.out.println("After con - OK" );
-            String q1="delete from price_info where client_id = ?";
-            String q5="delete from client_details where client_id = ?";
-            String q3="select item_name,item_Qnt from item_booked where client_id =?";
-            String q4="update items set Available=Available+? where item_name=?";
-            String q2="delete from item_booked where client_id = ?";
-            
-            
-            PreparedStatement pstm1 = con.prepareStatement(q1);
-            pstm1.setInt(1, client_id);
-            pstm1.executeUpdate();
-            
-            
-            PreparedStatement pstm2 = con.prepareStatement(q2);
-            pstm2 = con.prepareStatement(q2);
-            pstm2.setInt(1, client_id);
-            pstm2.executeUpdate();
-            
-            
-            PreparedStatement pstm3 = con.prepareStatement(q3);
-            pstm3 = con.prepareStatement(q3);
-            pstm3.setInt(1, client_id);
-            ResultSet rs = pstm3.executeQuery();
-            
-            
-            while(rs.next()){
-                PreparedStatement pstm4 = con.prepareStatement(q4);
-                pstm4.setInt(1,Integer.parseInt(rs.getString("item_Qnt")));
-                pstm4.setString(2,rs.getString("item_name"));
-                pstm4.executeUpdate();
-                pstm4.close();
-                
-            }
-            
-            PreparedStatement pstm5 = con.prepareStatement(q5);
-            pstm5.setInt(1, client_id);
-            pstm5.executeUpdate();
-           
-            JOptionPane.showMessageDialog(null, "Payment Cancelled" , "Message", JOptionPane.INFORMATION_MESSAGE);
-            pstm1.close();
-            pstm2.close();
-            pstm3.close();
-            
-            pstm5.close();
-            con.close();
-            
-            }catch(ClassNotFoundException | NumberFormatException | SQLException e1){
-                JOptionPane.showMessageDialog(null,e1,"Error",JOptionPane.ERROR_MESSAGE);
-            }finally{
-                
-        }
-    }
-    
-    public static void main(String[] args){
-        new Payment(1001,2001);
     }
 
+    public boolean functionIfFrameClosed() {
+        paymentCompleted = false;  // Set status to false if window is closed without submitting
+        return paymentCompleted;
+    }
+
+    public static void main(String[] args) {
+        Payment paymentInstance = new Payment(1001, 2001);
+    }
 }

@@ -2,7 +2,6 @@
 package billing.project;
 
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -13,11 +12,7 @@ import javax.swing.*;
 import javax.swing.table.*;
 
 public class DataEntry implements ActionListener {
-    
-    
-    
-    
-    
+ 
     JFrame frame = new JFrame();
     JLabel label1 = new JLabel();
     JLabel label2 = new JLabel();
