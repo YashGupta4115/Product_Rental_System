@@ -227,7 +227,7 @@ public class showOrders extends JFrame implements ActionListener{
                     ResultSet rs3 = pstm3.executeQuery();
                     rs3.next();
                     panel4.add(new JLabel(String.format("Labour : %.2f      |     ",rs3.getFloat("labour") )));
-                    panel4.add(new JLabel(String.format("GrandTotal : %.2f      |     ",rS.getFloat("Amount_payable")+rs3.getFloat("labour") )));
+                    panel4.add(new JLabel(String.format("GrandTotal : %.2f      |     ",rS.getFloat("Amount_payable") )));
                     panel4.add(new JLabel(String.format("Paid : %.2f      |     ",rS.getFloat("Amount_paid") )));
                     panel4.add(new JLabel(String.format("Due : %.2f       ",rS.getFloat("Amount_due") )));
                     labour = rs3.getFloat("labour");
