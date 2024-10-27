@@ -10,6 +10,8 @@ import java.sql.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import javax.swing.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public class Payment implements ActionListener {
 
@@ -37,8 +39,13 @@ public class Payment implements ActionListener {
 
     // Variable to hold payment status
     private boolean paymentCompleted = false;  // Default to false
+    private static int order_id;
+    private static double externalCosts;
 
-    public Payment(double ta, int id) {
+    public Payment(int order_id, double externalCosts, double ta, int id) {
+        Payment.order_id = order_id;
+        System.out.println(order_id + "at 48(payment)");
+        Payment.externalCosts = externalCosts;
         dialog = new JDialog();  // Create a JDialog instance
         dialog.setModal(true);   // Set dialog as modal to block other windows until closed
 
@@ -116,6 +123,7 @@ public class Payment implements ActionListener {
                     JOptionPane.showMessageDialog(null, "Payment failed or was cancelled.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (NumberFormatException ex) {
+                System.out.println("Exception at payment(125)" + ex);
                 JOptionPane.showMessageDialog(null, "Invalid amount entered!", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -128,40 +136,65 @@ public class Payment implements ActionListener {
     public boolean isPaymentCompleted() {
         return paymentCompleted;
     }
-    
-
+    Savepoint InitialClientDetails = null;
     // Update the dbms method to return a boolean value indicating success or failure
     public boolean dbms(double amtDue) {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             Connection con = DriverManager.getConnection(url, uname, pass);
-            String q2 = "insert into client_details values (?,?,?,?,?,?,?);";
-            PreparedStatement pstm = con.prepareStatement(q2);
+            
+            con.setAutoCommit(false); //start transaction
+            InitialClientDetails = con.setSavepoint("InitialClientDetails"); // save savepoint;
+            
+            String insertClient = "insert into client values(?,?)"; //client_id, name;
+            String insertPhone = "insert into phone values(?,?)"; //phone, client_id;
+            String insertOrders = "insert into orders values(?,?,?,?,?,?,?)";//order_id, client_id, order_data, event_data, items_amt, trans, amt paid ;
+
+            PreparedStatement prepareClient = con.prepareStatement(insertClient);
+            PreparedStatement preparePhone = con.prepareStatement(insertPhone);
+            PreparedStatement prepareOrders = con.prepareStatement(insertOrders);
+            LocalDate today = LocalDate.now();
 
             try {
                 SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
                 java.util.Date parsedDate = dateFormat.parse(clientEvent.getText());
                 java.sql.Date sqlDate = new java.sql.Date(parsedDate.getTime());
-                System.out.println(client_id);
-                pstm.setInt(1, client_id);
-                pstm.setString(2, clientName.getText());
-                pstm.setString(3, clientPhone.getText());
-                pstm.setDate(4, sqlDate);
-                pstm.setDouble(5, totalAmount);
-                pstm.setDouble(6, Double.parseDouble(clientPaid.getText()));
-                pstm.setDouble(7, amtDue);
-
-                pstm.executeUpdate();
-                JOptionPane.showMessageDialog(null, "Payment SUCCESS\nAmount Due: " + amtDue, "Message", JOptionPane.INFORMATION_MESSAGE);
-                pstm.close();
-                con.close();
+                
+                prepareClient.setInt(1, client_id);
+                prepareClient.setString(2, clientName.getText());
+                
+                preparePhone.setInt(1, Integer.parseInt(clientPhone.getText()));
+                preparePhone.setInt(2, client_id);
+                
+                prepareOrders.setInt(1, order_id);
+                prepareOrders.setInt(2,client_id);
+                prepareOrders.setDate(3, java.sql.Date.valueOf(today));
+                prepareOrders.setDate(4,sqlDate);
+                prepareOrders.setDouble(5, totalAmount - externalCosts);
+                prepareOrders.setDouble(6, externalCosts);
+                prepareOrders.setDouble(7, Double.parseDouble(clientPaid.getText()));
+                
+                prepareClient.executeUpdate();
+                preparePhone.executeUpdate();
+                prepareOrders.executeUpdate();
+                con.commit(); // commit changes;
+                JOptionPane.showMessageDialog(null, "Payment SUCCESS\nAmount Due: " + amtDue, "Message", JOptionPane.INFORMATION_MESSAGE); 
                 return true;  // Return true if the update is successful
             } catch (SQLException | ParseException e2) {
+                con.rollback(InitialClientDetails);
+                System.out.println("Exception at payment(181) + rolled back"+e2);
                 return false;  // Return false if there's a parsing or SQL exception
+            } finally{
+                prepareClient.close();
+                preparePhone.close();
+                prepareOrders.close();
+                
+                con.close();
             }
             
 
         } catch (ClassNotFoundException | NumberFormatException | SQLException e1) {
+            System.out.println("Exception at payment(187)" + e1);
             JOptionPane.showMessageDialog(null, "Payment Cancelled!", "Error", JOptionPane.ERROR_MESSAGE);
             functionIfFrameClosed();
             return false;  // Return false if an exception occurs
@@ -174,6 +207,6 @@ public class Payment implements ActionListener {
     }
 
     public static void main(String[] args) {
-        Payment paymentInstance = new Payment(1001, 2001);
+        Payment paymentInstance = new Payment(order_id, externalCosts, 1001, 2001);
     }
 }

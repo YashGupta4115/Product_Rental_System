@@ -14,12 +14,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
-import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 
 
@@ -36,7 +33,6 @@ public class showOrders extends JFrame implements ActionListener{
     JPanel panel3;
     JPanel panel4;
     JPanel panel5;
-    JPanel panel6;
     JPanel printPanel;
     
     JPanel headPanel;
@@ -63,6 +59,11 @@ public class showOrders extends JFrame implements ActionListener{
     
     public showOrders(){
         
+        this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+        this.setLayout(new GridBagLayout());
+        this.setSize(1000, 600); // Adjusted for better visibility
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10); 
         
         tableModel = new DefaultTableModel();
         tableModel.addColumn("Item_No");
@@ -71,14 +72,10 @@ public class showOrders extends JFrame implements ActionListener{
         tableModel.addColumn("Cost");
         tableModel.addColumn("Total_Cost");
         
-        
-      
-        
         panel1 = new JPanel();
         getInfo = new JButton("Get Info");
         getInfo.setFocusable(false);
         getInfo.addActionListener(this);
-        panel1.setBounds(0, 0, 550, 50);
         
         displayOrders = new JComboBox();
         
@@ -86,45 +83,49 @@ public class showOrders extends JFrame implements ActionListener{
         panel1.add(getInfo);
         
         panel2 = new JPanel();
-        panel2.setBounds(0,55,550,40);
         panel2.setVisible(false);
         
         panel3 = new JPanel();
-        panel3.setBounds(0, 100, 550, 400);
+        panel3.setLayout(new BorderLayout());
         dataTable = new JTable(tableModel);
-        panel3.add(new JScrollPane(dataTable));
-        panel3.setVisible(false);
-      
-
-        
-        
+        panel3.add(new JScrollPane(dataTable), BorderLayout.CENTER);
+       
         panel4 = new JPanel();
-        panel4.setBounds(0,500,550,30);
         panel4.add(new JLabel(""));
         panel4.setVisible(false);
         
         panel5 = new JPanel();
         printOrder = new JButton("Print");
         printOrder.addActionListener(this);
-        panel5.setBounds(0,540,550,30);
  
         panel5.add(printOrder);
         panel5.setVisible(false);
         
-        panel6 = new JPanel();
-        panel6.setBounds(0,40,550,500);
-        panel6.setVisible(true);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        this.add(panel1, gbc);
         
-        this.add(panel1);
-        panel6.add(panel2);
-        panel6.add(panel3);
-        panel6.add(panel4);
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.anchor = GridBagConstraints.CENTER;
+        this.add(panel2, gbc);
         
-        this.add(panel6);
-        this.add(panel5);
-        this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-        this.setLayout(null);
-        this.setSize(2480 , 3508);
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.fill = GridBagConstraints.BOTH;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0; // Allow table to expand
+        this.add(panel3, gbc);
+        
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.anchor = GridBagConstraints.CENTER;
+        this.add(panel4, gbc);
+        
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        this.add(panel5, gbc);
         this.setVisible(true);
         
         clientNameDisplay();
@@ -135,20 +136,21 @@ public class showOrders extends JFrame implements ActionListener{
     String uname = Main.uname;
     String pass = Main.pass;
     
+    int client_id;
+    int order_id;
     
     
     void clientNameDisplay(){
-        
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");
             Connection con;
             con = DriverManager.getConnection(url,uname,pass);
             Statement st = con.createStatement();
             
-            String q = "select client_name,Event_date from client_details ";
+            String q = "select c.name, o.event_date,o.order_id from client c left join orders o on c.client_id = o.client_id;";
             ResultSet rs = st.executeQuery(q);
             while(rs.next()){
-                displayOrders.addItem(rs.getString("client_name")+"("+rs.getString("Event_date")+")");
+                displayOrders.addItem(rs.getString("name")+"("+rs.getString("Event_date")+")("+rs.getInt("order_id")+")");
             }
             
         }catch(ClassNotFoundException | SQLException e){
@@ -156,13 +158,9 @@ public class showOrders extends JFrame implements ActionListener{
             this.dispose();
         }
     }
-    
-    int client_id;
-    
     double labour,total;
     String name,date; 
-    
-    
+       
     public void displayItems(){
         
         tableModel.setRowCount(0);
@@ -176,7 +174,7 @@ public class showOrders extends JFrame implements ActionListener{
             Class.forName("com.mysql.cj.jdbc.Driver");
             Connection con;
             con = DriverManager.getConnection(url,uname,pass);
-            String getClientInfo = "Select * from client_details where client_name = ? and Event_date = ?";
+            String getClientInfo = "Select c.name,c.client_id,o.event_date,o.order_date from client c join orders o on c.client_id = o.client_id where order_id = ?";
             
             PreparedStatement pstm = con.prepareStatement(getClientInfo);
             
@@ -188,26 +186,25 @@ public class showOrders extends JFrame implements ActionListener{
                 String getName = result[0];
 
                 String  getDate = result[1].substring(0,result[1].length()-1);
+                
+                order_id = Integer.parseInt(result[2].substring(0,result[2].length()-1));
 
-                pstm.setString(1,getName);
+                pstm.setInt(1,order_id);
                 try{
-                    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-                    java.util.Date parsedDate = dateFormat.parse(getDate);
-                    java.sql.Date sqlDate = new java.sql.Date(parsedDate.getTime());
-                    pstm.setDate(2,sqlDate);
                     ResultSet rS = pstm.executeQuery();
                     rS.next();
                     client_id = rS.getInt("client_id");
                     
-                    panel2.add(new JLabel(String.format("ID : %d      |     ",client_id )));
-                    panel2.add(new JLabel("    Name : "+rS.getString("client_name")+"      |      Event_Date : "+sqlDate ));
-                    name = rS.getString("client_name");
+                    panel2.add(new JLabel(String.format("Order ID : %d      |     ",order_id )));
+                    panel2.add(new JLabel(String.format("Client ID : %d      |     ",client_id )));
+                    panel2.add(new JLabel("    Name : "+rS.getString("name")+"      |      Event_Date : "+rS.getDate("event_date") ));
+                    name = rS.getString("name");
                     date = getDate;
                     panel2.setVisible(true);
                     
-                    String q1 = "select item_id,item_name,item_Qnt from allOrders where client_id = ? ";
+                    String q1 = "select ib.item_id,i.item_name,ib.item_Qnt from items_booked ib join items i on ib.item_id = i.item_id where order_id = ? ";
                     PreparedStatement pstm1 = con.prepareStatement(q1);
-                    pstm1.setInt(1,client_id);
+                    pstm1.setInt(1,order_id);
                     ResultSet rs1 = pstm1.executeQuery();
                     while(rs1.next()){
                         String q2 = "select Amount,Amount*? as Total from items where Item_id=?";
@@ -221,29 +218,31 @@ public class showOrders extends JFrame implements ActionListener{
                         
                     }
                     panel3.setVisible(true);
-                    String q3 = "select labour from price_info where client_id=?";
+                    String q3 = "select items_amt, transport_and_human_capital_cost, amt_paid from orders where order_id=?";
                     PreparedStatement pstm3 = con.prepareStatement(q3);
-                    pstm3.setInt(1,client_id);
+                    pstm3.setInt(1,order_id);
                     ResultSet rs3 = pstm3.executeQuery();
                     rs3.next();
-                    panel4.add(new JLabel(String.format("Labour : %.2f      |     ",rs3.getFloat("labour") )));
-                    panel4.add(new JLabel(String.format("GrandTotal : %.2f      |     ",rS.getFloat("Amount_payable") )));
-                    panel4.add(new JLabel(String.format("Paid : %.2f      |     ",rS.getFloat("Amount_paid") )));
-                    panel4.add(new JLabel(String.format("Due : %.2f       ",rS.getFloat("Amount_due") )));
-                    labour = rs3.getFloat("labour");
-                    total = rS.getFloat("Amount_payable") + labour;
+                    panel4.add(new JLabel(String.format("Transport And Human Capital Cost : %.2f      |     ",rs3.getFloat("transport_and_human_capital_cost") )));
+                    panel4.add(new JLabel(String.format("GrandTotal : %.2f      |     ",rs3.getFloat("transport_and_human_capital_cost")+rs3.getFloat("items_amt") )));
+                    panel4.add(new JLabel(String.format("Paid : %.2f      |     ", rs3.getFloat("amt_paid")  )));
+                    panel4.add(new JLabel(String.format("Due : %.2f       ",rs3.getFloat("items_amt") - rs3.getFloat("transport_and_human_capital_cost"))));
+                    labour = rs3.getFloat("transport_and_human_capital_cost");
+                    total = rs3.getFloat("transport_and_human_capital_cost")+rs3.getFloat("items_amt");
                     panel4.setVisible(true);
                     panel5.setVisible(true);
                     
                     
-                }catch(SQLException | ParseException e2){
+                }catch(SQLException e2){
+                    System.out.println("Exception at 229(showOrders)"+e2);
                     JOptionPane.showMessageDialog(null,e2,"Error",JOptionPane.ERROR_MESSAGE);
                    
                 }
             }catch(HeadlessException | SQLException e){
-               
+               System.out.println("Exception at 234(showOrders)"+e);
             }
         }catch(ClassNotFoundException | SQLException e){
+            System.out.println("Exception at 237(showOrders)"+e);
            JOptionPane.showMessageDialog(null,e,"Error",JOptionPane.ERROR_MESSAGE);
            
         }

@@ -43,8 +43,34 @@ public class newOrder implements ActionListener {
     JTable dataTable;
     
     HashMap<String, Integer> itemQuantityMap;
+    
+    int order_id = 3001;
+    
+    public int getOrderId(){       
+        try(
+            Connection conn = DriverManager.getConnection(url,uname,pass);
+            Statement stmt = conn.createStatement()
+        ){
+            String getPrevOrderId = "select MAX(order_id) from orders";
+            ResultSet rs = stmt.executeQuery(getPrevOrderId);
+            
+            if(rs.next()){
+                System.out.println(rs.getInt(1));
+                order_id = rs.getInt(1) + 1;
+                System.out.println(order_id);
+            }
+            
+            return order_id;
+        }catch(Exception e){
+            System.out.println("Exception caught at 61 ( new Orders )  : "+e);
+        }
+        
+        return order_id;
+    }
+
 
     public void openNewOrder() {
+        order_id = getOrderId();
         itemQuantityMap = new HashMap<>();
 
         panel1 = new JPanel();
@@ -75,7 +101,7 @@ public class newOrder implements ActionListener {
         
         externalCosts = new JTextField();
         externalCosts.setPreferredSize(new Dimension(150, 20));
-        panel4.add(new JLabel("Extra Costs (Labour + Delivery):"));
+        panel4.add(new JLabel("Extra Costs (Human capital + Delivery):"));
         panel4.add(externalCosts);
         
         finalSubmit = new JButton("Confirm Order");
@@ -195,9 +221,11 @@ public class newOrder implements ActionListener {
                 // Update the combo box
                 updateComboBox();
             } else {
+                System.out.println("Exception at newOrder(220)");
                 JOptionPane.showMessageDialog(null, "Not enough Quantity", "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (NumberFormatException e) {
+            System.out.println("Exception at newOrder(224)");
             JOptionPane.showMessageDialog(null, "Please enter a valid quantity", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -226,6 +254,7 @@ public class newOrder implements ActionListener {
             double externalCost = Double.parseDouble(externalCosts.getText());
             return quantity > 0 && externalCost >= 0;  // Ensure quantity is positive and cost is non-negative
         } catch (NumberFormatException e) {
+            System.out.println("Exception at newOrder(253)");
             JOptionPane.showMessageDialog(frame, "Please enter valid numbers for quantity and costs.", "Input Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
@@ -247,6 +276,7 @@ public class newOrder implements ActionListener {
                 }
             }
         } catch (ClassNotFoundException | SQLException e) {
+            System.out.println("Exception at newOrder(275)");
             JOptionPane.showMessageDialog(null, e, "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -275,7 +305,8 @@ public class newOrder implements ActionListener {
             int client_id = getNewClientId();  // Call the method to get the client ID
 
             // Create a Payment object and check payment status
-            Payment py = new Payment(totalAmountWithExtras, client_id);
+            System.out.println(order_id + "at 305(newOrder)");
+            Payment py = new Payment(order_id, Double.parseDouble(externalCosts.getText()),totalAmountWithExtras , client_id);
             boolean status = py.isPaymentCompleted();
             if (status) {
                 insertDBMS(client_id);  // If payment is successful, update the database
@@ -286,30 +317,31 @@ public class newOrder implements ActionListener {
             JOptionPane.showMessageDialog(null, "Payment Cancelled", "Warning", JOptionPane.WARNING_MESSAGE);
         }
     } catch (NumberFormatException e) {
+        System.out.println("Exception at newOrder(315)");
         JOptionPane.showMessageDialog(null, "Please Enter Labour + Transport cost!", "INVALID", JOptionPane.ERROR_MESSAGE);
     }
 }
 
-// Method to get a new client ID
-private int getNewClientId() {
+    // Method to get a new client ID
+    private int getNewClientId() {
     int newClientId = 2001;  // Default ID
     try {
         Class.forName("com.mysql.cj.jdbc.Driver");
         try (Connection con = DriverManager.getConnection(url, uname, pass);
              Statement st = con.createStatement()) {
             // Retrieve the last client ID from the client_details table
-            String query = "SELECT client_id FROM client_details ORDER BY client_id DESC LIMIT 1;";
+            String query = "SELECT client_id FROM client ORDER BY client_id DESC LIMIT 1;";
             ResultSet rs = st.executeQuery(query);
             if (rs.next()) {
                 newClientId = rs.getInt("client_id") + 1;  // Increment the last ID by 1
             }
         }
     } catch (ClassNotFoundException | SQLException e) {
+        System.out.println("Exception at newOrder(335)");
         JOptionPane.showMessageDialog(null, "Error fetching client ID: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
     return newClientId;  // Return the new client ID
 }
-
 
     public void insertDBMS(int client_id){
         try{
@@ -318,53 +350,32 @@ private int getNewClientId() {
             con = DriverManager.getConnection(url,uname,pass);
             Statement st = con.createStatement();
             
-//            String retriveId = "SELECT * FROM client_details ORDER BY client_id DESC LIMIT 1;";
-            String item_booked = "insert into item_booked values(?,?,?,?)";
-            String allOrders = "insert into allOrders values(?,?,?,?)";
-            String price_info = "insert into price_info values(?,?,?,?)";
+            String items_booked = "insert into items_booked values(?,?,?,?)";
             String reduceAvail = "update items set Available = Available-? where item_name = ?";
             String retriveItemId = "Select Item_id from items where item_name = ?";
             
             ResultSet rs2;
             PreparedStatement pstm2 = con.prepareStatement(reduceAvail);
-            PreparedStatement pstm = con.prepareStatement(item_booked);
-            PreparedStatement pstmall = con.prepareStatement(allOrders);
+            PreparedStatement pstm = con.prepareStatement(items_booked);
             PreparedStatement pstm3 = con.prepareStatement(retriveItemId);
+            
             for(int i = 0; i < this.dataTable.getRowCount(); i++)
             {
-                
                 pstm3.setString(1,this.dataTable.getValueAt(i,0).toString());
                 rs2 = pstm3.executeQuery();
                 rs2.next();
-                pstm.setInt(1,client_id);             
-                pstm.setInt(2,Integer.parseInt(rs2.getString("Item_id")));
-                pstm.setString(3,this.dataTable.getValueAt(i,0).toString());
+                pstm.setInt(1,order_id);   
+                pstm.setInt(2,client_id);
+                pstm.setInt(3,Integer.parseInt(rs2.getString("Item_id")));
                 pstm.setInt(4,Integer.parseInt(this.dataTable.getValueAt(i, 1).toString()));
-                
-                pstmall.setInt(1,client_id);             
-                pstmall.setInt(2,Integer.parseInt(rs2.getString("Item_id")));
-                pstmall.setString(3,this.dataTable.getValueAt(i,0).toString());
-                pstmall.setInt(4,Integer.parseInt(this.dataTable.getValueAt(i, 1).toString()));
                 
                 pstm2.setInt(1,Integer.parseInt(this.dataTable.getValueAt(i, 1).toString()));
                 pstm2.setString(2,this.dataTable.getValueAt(i,0).toString());
                 pstm.executeUpdate();
-                pstmall.executeUpdate();
                 pstm2.executeUpdate();
-            }
-            
-            pstm = con.prepareStatement(price_info);
-            
-                pstm.setInt(1,client_id);        
-                double total = calculateTotal();
-                pstm.setDouble(2, total);
-                pstm.setDouble(3,Double.parseDouble(externalCosts.getText()));
-                pstm.setDouble(4,total + Double.parseDouble(externalCosts.getText()));
-                pstm.executeUpdate();
-            
-            
-            
+            }           
         }catch(ClassNotFoundException | SQLException e){
+            System.out.println("Exception at newOrder(373)");
             JOptionPane.showMessageDialog(null,e,"Error",JOptionPane.ERROR_MESSAGE);
         }
         

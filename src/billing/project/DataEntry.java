@@ -58,11 +58,7 @@ public class DataEntry implements ActionListener {
         tableModel.addColumn("ItemNo");
         tableModel.addColumn("Item_Name");
         tableModel.addColumn("Item_Amount");
-        tableModel.addColumn("Item_Available");
-
-       
-        
-        
+        tableModel.addColumn("Item_Available");    
         
         panel.add(label1);
         panel.add(textField1);

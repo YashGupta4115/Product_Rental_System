@@ -50,10 +50,10 @@ public class OptionMain extends JFrame implements ActionListener {
         showOrders.setBackground(Color.LIGHT_GRAY);
         showOrders.setPreferredSize(new Dimension(150, 40));
         
-        deleteOrders = new JButton("SHOW ORDERS");
-        deleteOrders.setFocusable(false);
-        deleteOrders.setBackground(Color.LIGHT_GRAY);
-        deleteOrders.setPreferredSize(new Dimension(150, 40));
+//        deleteOrders = new JButton("SHOW ORDERS");
+//        deleteOrders.setFocusable(false);
+//        deleteOrders.setBackground(Color.LIGHT_GRAY);
+//        deleteOrders.setPreferredSize(new Dimension(150, 40));
         
         
         addItemButton.addActionListener(this);
