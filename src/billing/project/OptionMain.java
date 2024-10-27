@@ -1,16 +1,10 @@
-
 package billing.project;
-
 
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-
-
-//extends - inherits class(is-a), implements : inherits interface(can-do)
 public class OptionMain extends JFrame implements ActionListener {
-    
     JPanel panel;
     JLabel label;
     JPanel display;
@@ -20,86 +14,94 @@ public class OptionMain extends JFrame implements ActionListener {
     JButton newOrder;
     JButton modifyOrder;
     JButton showOrders;
-    JButton deleteOrders;
-    
-    public OptionMain(){
-        panel = new JPanel();
+
+    public OptionMain() {
+        // Set up the main frame
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setLayout(new BorderLayout());  // Use BorderLayout for simpler placement
+        setExtendedState(OptionMain.MAXIMIZED_BOTH);
+
+        // Top black strip panel using GridBagLayout for button alignment
+        JPanel topPanel = new JPanel(new GridBagLayout());
+        topPanel.setBackground(Color.BLACK);
+//        topPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0)); // Add 15px gap at the top
+        topPanel.setPreferredSize(new Dimension(getWidth(), 70)); //
         
-        addItemButton = new JButton("ADD ITEMS");
-        addItemButton.setFocusable(false);
-        addItemButton.setBackground(Color.LIGHT_GRAY);
-        addItemButton.setPreferredSize(new Dimension(150, 40));
+        // Constraints for button layout in the top panel
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH; //mizimize width;
+        gbc.weightx = 1.0; //spread horizontally;   
+        gbc.insets = new Insets(0,0,0,0);  // Padding around buttons
+
+        // Initialize buttons with styling and add hover effects
+        addItemButton = createStyledButton("ADD ITEMS");
+        showItems = createStyledButton("SHOW ITEMS");
+        newOrder = createStyledButton("NEW ORDER");
+        modifyOrder = createStyledButton("MODIFY ORDERS");
+        showOrders = createStyledButton("SHOW ORDERS");
         
-        showItems = new JButton("SHOW ITEMS");
-        showItems.setFocusable(false);
-        showItems.setBackground(Color.LIGHT_GRAY);
-        showItems.setPreferredSize(new Dimension(150, 40));
-        
-        newOrder  = new JButton("NEW ORDER");
-        newOrder.setFocusable(false);
-        newOrder.setBackground(Color.LIGHT_GRAY);
-        newOrder.setPreferredSize(new Dimension(150, 40));      
-        
-        modifyOrder = new JButton("MODIFY ORDERS");
-        modifyOrder.setFocusable(false);
-        modifyOrder.setBackground(Color.LIGHT_GRAY);
-        modifyOrder.setPreferredSize(new Dimension(150, 40));
-        
-        showOrders = new JButton("SHOW ORDERS");
-        showOrders.setFocusable(false);
-        showOrders.setBackground(Color.LIGHT_GRAY);
-        showOrders.setPreferredSize(new Dimension(150, 40));
-        
-//        deleteOrders = new JButton("SHOW ORDERS");
-//        deleteOrders.setFocusable(false);
-//        deleteOrders.setBackground(Color.LIGHT_GRAY);
-//        deleteOrders.setPreferredSize(new Dimension(150, 40));
-        
-        
+        // Add action listeners for buttons
         addItemButton.addActionListener(this);
         showItems.addActionListener(this);
         newOrder.addActionListener(this);
         modifyOrder.addActionListener(this);
         showOrders.addActionListener(this);
+
+        // Add buttons to the top panel with constraints
+        topPanel.add(addItemButton, gbc);
+        topPanel.add(showItems, gbc);
+        topPanel.add(newOrder, gbc);
+        topPanel.add(modifyOrder, gbc);
+        topPanel.add(showOrders, gbc);
         
-        
-        
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setLayout(new FlowLayout()); // defaulr layout-directional flow
-        this.setSize(500,400);
-        
-        
-        
-       
-        this.add(addItemButton);
-        this.add(showItems);
-        this.add(newOrder);
-        this.add(modifyOrder);
-        this.add(showOrders);
-        //this.add(duePayOrders);
-        //this.add(deleteOrders);
+        // Add the top panel to the top of the frame
+        this.add(topPanel, BorderLayout.NORTH);
+
+        // Set frame visibility
         this.setVisible(true);
+    }
+
+    // Method to create a styled button with hover effect
+    public JButton createStyledButton(String text) {
+        JButton button = new JButton(text);
+        button.setFocusable(false);
+        button.setBackground(Color.BLACK);
+        button.setForeground(Color.WHITE);
+        button.setPreferredSize(new Dimension(150, 40));
+        button.setBorderPainted(false); // Remove button border
+        button.setOpaque(true); // Make sure background color is shown
+        
+        // Mouse listener for hover effect
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(Color.WHITE);
+                button.setForeground(Color.BLACK);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(Color.BLACK);
+                button.setForeground(Color.WHITE);
+            }
+        });
+        
+        return button;
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if(e.getSource() == addItemButton){
+        if (e.getSource() == addItemButton) {
             new DataEntry();
-        }
-        else if (e.getSource() == showItems) {
+        } else if (e.getSource() == showItems) {
             new showItems();
-        }
-        else if (e.getSource() == newOrder) {
+        } else if (e.getSource() == newOrder) {
             newOrder NewOrder = new newOrder();
             NewOrder.openNewOrder();
-        }
-        else if (e.getSource() == modifyOrder){
+        } else if (e.getSource() == modifyOrder) {
             new modifyExistingOrder();
-        }
-        else if (e.getSource() == showOrders){
+        } else if (e.getSource() == showOrders) {
             new showOrders();
         }
-        
     }
-    
 }

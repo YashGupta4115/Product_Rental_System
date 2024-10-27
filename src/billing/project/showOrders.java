@@ -61,7 +61,7 @@ public class showOrders extends JFrame implements ActionListener{
         
         this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         this.setLayout(new GridBagLayout());
-        this.setSize(1000, 600); // Adjusted for better visibility
+        setExtendedState(this.MAXIMIZED_BOTH); // Adjusted for better visibility
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10); 
         

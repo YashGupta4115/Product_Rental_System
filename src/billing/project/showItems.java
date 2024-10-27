@@ -1,9 +1,14 @@
 
 package billing.project;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.*;
@@ -25,13 +30,14 @@ public class showItems extends JFrame implements ActionListener {
     public showItems(){
         
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        this.setLayout(null);
-        this.setSize(800,500);
+        this.setLayout(new BorderLayout());
+        setExtendedState(showItems.MAXIMIZED_BOTH);
         
-        ButtonPanel = new JPanel();
-        ButtonPanel.setBounds(0,0,800,50);
+        ButtonPanel = new JPanel(new GridBagLayout());  
+        ButtonPanel.setBackground(Color.BLACK);
+        ButtonPanel.setForeground(Color.WHITE);
         
-        
+        ButtonPanel.setBorder(BorderFactory.createEmptyBorder(25, 0, 25, 0));
         
         tableModel = new DefaultTableModel();
         tableModel.addColumn("Item_No");
@@ -40,6 +46,29 @@ public class showItems extends JFrame implements ActionListener {
         tableModel.addColumn("Item_Total");
         tableModel.addColumn("Item_Available");
         this.dataTable = new JTable(tableModel);
+        
+        dataTable.setRowHeight(30);
+        dataTable.setFont(new Font("MS Mincho", Font.PLAIN, 18));
+        
+        TableCellRenderer customRenderer = (JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) -> {
+            JLabel cell = new JLabel(value.toString());
+            cell.setFont(new Font("MS Mincho", Font.ITALIC, 16));
+            cell.setOpaque(true);
+            cell.setBackground(row % 2 == 0 ? new Color(45, 45, 45) : new Color(55, 55, 55));
+            cell.setForeground(Color.WHITE);
+            return cell;
+        };
+        
+        for(int i = 0 ; i < dataTable.getColumnCount() ; i++){
+            dataTable.getColumnModel().getColumn(i).setCellRenderer(customRenderer);
+        }
+        
+        JTableHeader header = dataTable.getTableHeader();
+        header.setFont(new Font("SansSerif", Font.BOLD, 18)); // Header font style
+        header.setBackground(new Color(60, 60, 60)); // Header background color
+        header.setForeground(Color.WHITE); // Header text color
+        header.setPreferredSize(new Dimension(header.getWidth(), 40)); // Header height
+        
         
         columnModel = this.dataTable.getColumnModel();
 
@@ -50,6 +79,8 @@ public class showItems extends JFrame implements ActionListener {
         columnModel.getColumn(4).setPreferredWidth(500);
         
         deleteItem = new JButton("Remove Item");
+        deleteItem.setBackground(Color.WHITE);
+        deleteItem.setForeground(Color.BLACK);
         deleteItem.addActionListener(this);
         ButtonPanel.add(deleteItem);
         deleteItem.setBackground(Color.LIGHT_GRAY);
@@ -59,12 +90,11 @@ public class showItems extends JFrame implements ActionListener {
         
         
         
-        panel1 = new JPanel();
-        panel1.setBounds(0,60,800,400);
-
-        panel1.add(new JScrollPane(dataTable));
-        this.add(ButtonPanel);
-        this.add(panel1);
+        panel1 = new JPanel(new BorderLayout()); // Change layout to BorderLayout
+        panel1.add(new JScrollPane(dataTable), BorderLayout.CENTER); // Add table to center
+        
+        this.add(ButtonPanel, BorderLayout.NORTH);
+        this.add(panel1, BorderLayout.CENTER);
         this.setVisible(true);
         
         displayItems();
