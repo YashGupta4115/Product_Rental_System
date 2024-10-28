@@ -132,17 +132,13 @@ public class DataEntry extends JFrame implements ActionListener {
         dataTable.setFont(new Font("MS Mincho", Font.PLAIN, 18));
 
         // Customize cell appearance using a custom cell renderer
-        TableCellRenderer customRenderer = new TableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                                                           boolean hasFocus, int row, int column) {
-                JLabel cell = new JLabel(value.toString());
-                cell.setFont(new Font("MS Mincho", Font.ITALIC, 16));
-                cell.setOpaque(true);
-                cell.setBackground(row % 2 == 0 ? new Color(45, 45, 45) : new Color(55, 55, 55));
-                cell.setForeground(Color.WHITE);
-                return cell;
-            }
+        TableCellRenderer customRenderer = (JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) -> {
+            JLabel cell = new JLabel(value.toString());
+            cell.setFont(new Font("MS Mincho", Font.ITALIC, 16));
+            cell.setOpaque(true);
+            cell.setBackground(row % 2 == 0 ? new Color(45, 45, 45) : new Color(55, 55, 55));
+            cell.setForeground(Color.WHITE);
+            return cell;
         };
 
         // Apply custom renderer to each column

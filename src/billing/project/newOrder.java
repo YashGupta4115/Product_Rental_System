@@ -1,16 +1,28 @@
 package billing.project;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.sql.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
 import java.util.*;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableCellRenderer;
 
-public class newOrder implements ActionListener {
+public class newOrder extends JFrame implements ActionListener {
     
     JFrame frame = new JFrame();
     float grandTotal = 0;
@@ -20,11 +32,13 @@ public class newOrder implements ActionListener {
     String uname = Main.uname;
     String pass = Main.pass;
 
+    JPanel topPanel;
     JPanel panel1;
     JPanel panel2;
     JPanel panel3;
     JPanel panel4;
     JPanel panel5;
+    JPanel bottomPanel;
 
     JTextField addQuantity;
     JTextField externalCosts;
@@ -67,84 +81,77 @@ public class newOrder implements ActionListener {
         
         return order_id;
     }
-
-
-    public void openNewOrder() {
-        order_id = getOrderId();
-        itemQuantityMap = new HashMap<>();
-
-        panel1 = new JPanel();
-        panel1.setBounds(150, 0, 800, 50);
-        panel1.add(new JLabel("BILLING SYSTEM"));
-
-        panel3 = new JPanel();
-        panel3.setBounds(150, 250, 800, 200);
-       
-        tableModel = new DefaultTableModel();
-        tableModel.addColumn("Item");
-        tableModel.addColumn("Quantity");
-        tableModel.addColumn("Amount");
-        tableModel.addColumn("Total Amount");
-
-        dataTable = new JTable(tableModel);
-        panel3.add(new JScrollPane(dataTable));
-
-        // Setting column widths
-        TableColumnModel columnModel = dataTable.getColumnModel();
-        columnModel.getColumn(0).setPreferredWidth(550);
-        columnModel.getColumn(1).setPreferredWidth(300);
-        columnModel.getColumn(2).setPreferredWidth(300);
-        columnModel.getColumn(3).setPreferredWidth(500);
+    
+    public JButton createStyledButton(String text){
+        JButton button = new JButton(text);
+        button.setFocusable(false);
+        button.setBackground(Color.BLACK);
+        button.setForeground(Color.WHITE);
+        button.setPreferredSize(new Dimension(150,40));
+        button.setBorderPainted(false);
+        button.setOpaque(true);
         
-        panel4 = new JPanel();
-        panel4.setBounds(150, 450, 800, 60);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         
-        externalCosts = new JTextField();
-        externalCosts.setPreferredSize(new Dimension(150, 20));
-        panel4.add(new JLabel("Extra Costs (Human capital + Delivery):"));
-        panel4.add(externalCosts);
+        button.addMouseListener(new MouseAdapter(){
+            @Override
+            public void mouseEntered(MouseEvent e){
+                button.setBackground(Color.GRAY);
+                button.setForeground(Color.BLACK);
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e){
+                button.setBackground(Color.BLACK);
+                button.setForeground(Color.WHITE);
+            }
+        });
         
-        finalSubmit = new JButton("Confirm Order");
-        finalSubmit.setBackground(Color.LIGHT_GRAY);
-        finalSubmit.setPreferredSize(new Dimension(150, 40));
-        finalSubmit.addActionListener(this);
-        panel4.add(finalSubmit);
-        
-        totalAmountLabel = new JLabel("Total Amount: Rs. 0.00");
-        panel4.add(totalAmountLabel);
-        
-        newOrder = new JButton("New Order");
-        newOrder.setBackground(Color.LIGHT_GRAY);
-        newOrder.setPreferredSize(new Dimension(150, 40));
-        newOrder.addActionListener(this);
-        panel5 = new JPanel();
-        panel5.setBounds(150, 510, 800, 50);
-        panel5.add(newOrder);
-        
-        frame.add(panel1);
-        addItems(); // This will create panel2
-        frame.add(panel3);
-        frame.add(panel4);
-        frame.add(panel5);
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.setLayout(null);
-        frame.setSize(1150, 1000);
-        frame.setVisible(true);
+        return button;
     }
     
-    public final void addItems() {
-        panel2 = new JPanel();
-        panel2.setBounds(150, 100, 800, 100);
-
-        itemList = new JComboBox<>();
-        addButton = new JButton("ADD ITEM");
-        addButton.setBackground(Color.LIGHT_GRAY);
-        addButton.setPreferredSize(new Dimension(150, 40));
-        removeButton = new JButton("REMOVE ITEM");
-        removeButton.setBackground(Color.LIGHT_GRAY);
-        removeButton.setPreferredSize(new Dimension(150, 40));
+    public void openNewOrder() {
         
-        // Remove button action
+        setExtendedState(this.MAXIMIZED_BOTH);
+        this.setLayout(new BorderLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        
+        order_id = getOrderId();
+        itemQuantityMap = new HashMap<>();
+      
+        panel1 = new JPanel( new BorderLayout()  );
+        panel2 = new JPanel( new GridBagLayout()  );
+        panel3 = new JPanel( new BorderLayout()  );
+        panel4 = new JPanel( new GridBagLayout() );
+        panel5 = new JPanel( new BorderLayout()  );
+        topPanel = new JPanel( new BorderLayout() ); //panel 1 and panel 2;
+        bottomPanel = new JPanel( new BorderLayout() ); //panel 4 and panel 5;
+        
+        //panel 1
+        JLabel titleLabel = new JLabel("BILLING SYSTEM", JLabel.CENTER);
+        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 24)); // Optional: set a larger font for the title
+        panel1.add(titleLabel, BorderLayout.CENTER);     
+        panel1.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+          
+        //panel 2
+        itemList = new JComboBox<>();
+        itemList.setPreferredSize(new Dimension(250,40));
+        itemList.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        
+        itemList.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                list.setFixedCellHeight(25);  // Set the fixed height for each cell
+                return c;
+            }
+        });
+        
+        
+        addButton = createStyledButton("ADD ITEM");
+        
+        removeButton = createStyledButton("REMOVE ITEM");
+              
         removeButton.addActionListener((ActionEvent e) -> {
             int selectedRow = dataTable.getSelectedRow();
             if (selectedRow != -1) {
@@ -170,12 +177,114 @@ public class newOrder implements ActionListener {
 
         createComboBox();
         
-        panel2.add(itemList);
-        panel2.add(new JLabel("Quantity: "));
-        panel2.add(addQuantity);
-        panel2.add(addButton);
-        panel2.add(removeButton);
-        frame.add(panel2);
+        gbc.insets = new Insets(0, 10, 0, 10); // Adds padding between components
+        gbc.fill = GridBagConstraints.HORIZONTAL; // Make components stretch horizontally
+        
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel2.add(itemList, gbc);
+        
+        gbc.gridx = 1;
+        panel2.add(new JLabel("Quantity: "), gbc);
+        
+        gbc.gridx = 2;
+        panel2.add(addQuantity, gbc);
+        
+        gbc.gridx = 3;
+        panel2.add(addButton, gbc);
+        
+        gbc.gridx = 4;
+        panel2.add(removeButton, gbc);    
+        panel2.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+ 
+        topPanel.add(panel1, BorderLayout.NORTH);
+        topPanel.add(panel2, BorderLayout.SOUTH);
+        topPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        
+        this.add(topPanel, BorderLayout.NORTH);
+
+        //panel 3
+        tableModel = new DefaultTableModel();
+        tableModel.addColumn("Item");
+        tableModel.addColumn("Quantity");
+        tableModel.addColumn("Amount");
+        tableModel.addColumn("Total Amount");
+        
+        dataTable = new JTable(tableModel);
+        
+        dataTable.setRowHeight(30);
+        dataTable.setFont(new Font("MS Mincho", Font.PLAIN, 18));
+        
+        TableCellRenderer customeCellRender = (JTable table, Object value,boolean isSelected, boolean hasFocus, int row, int column) -> {
+            JLabel cell = new JLabel(value.toString());
+            cell.setFont(new Font("MS Mincho", Font.ITALIC, 16));
+            cell.setOpaque(true);
+            cell.setBackground(row%2 == 0 ? new Color(45,45,45) : new Color(55,55,55));
+            cell.setForeground(Color.WHITE);
+            return cell;
+        };
+        
+        for(int i = 0 ; i < dataTable.getColumnCount() ; i++){
+            dataTable.getColumnModel().getColumn(i).setCellRenderer(customeCellRender);
+        }
+        
+        JTableHeader header = dataTable.getTableHeader();
+        header.setFont( new Font("SansSerif", Font.BOLD, 18) );
+        header.setBackground(new Color(60, 60, 60));
+        header.setForeground(Color.WHITE);
+        header.setPreferredSize(new Dimension(header.getWidth(), 40));
+        
+        panel3.add(new JScrollPane(dataTable), BorderLayout.CENTER);
+        panel3.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+         
+        this.add(panel3, BorderLayout.CENTER);
+        
+        // Setting column widths
+        TableColumnModel columnModel = dataTable.getColumnModel();
+        columnModel.getColumn(0).setPreferredWidth(550);
+        columnModel.getColumn(1).setPreferredWidth(300);
+        columnModel.getColumn(2).setPreferredWidth(300);
+        columnModel.getColumn(3).setPreferredWidth(500);
+        
+        //panel 4
+        externalCosts = new JTextField();
+        externalCosts.setPreferredSize(new Dimension(150, 40));
+        
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel4.add(new JLabel("Extra Costs (Human capital + Delivery):"), gbc);
+        
+        gbc.gridx = 1;
+        panel4.add(externalCosts, gbc);
+        
+        finalSubmit = createStyledButton("Confirm Order");
+        finalSubmit.addActionListener(this);
+        
+        gbc.gridx = 2;
+        panel4.add(finalSubmit, gbc); 
+        
+        totalAmountLabel = new JLabel("Total Amount: Rs. 0.00");
+        
+        gbc.gridx = 3;
+        panel4.add(totalAmountLabel, gbc);
+        panel4.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        
+        bottomPanel.add(panel4, BorderLayout.NORTH);
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        
+        
+        //panel 5
+        newOrder = createStyledButton("New Order");
+      
+        newOrder.addActionListener(this);
+        panel5.add(newOrder, BorderLayout.SOUTH);
+        panel5.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+        
+        bottomPanel.add(panel5, BorderLayout.SOUTH);
+        
+        this.add(bottomPanel, BorderLayout.SOUTH);        
+        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        this.setVisible(true);
     }
 
     @Override
